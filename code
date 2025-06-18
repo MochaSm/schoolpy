@@ -1,0 +1,153 @@
+import pygame
+import sys
+import random
+pygame.font.init()
+WIDTH, HEIGHT = 800,500 
+font = pygame.font.Font(None, 40, )
+BUTTONE_WIDTH =40
+BLACK = (0,0,0)
+WHITE =(255,255,255)
+RED = (255,0,0)
+YELLOW = (255,255,0)
+GREEN = (0,255,0)
+
+fonts = {"LETTER_FONT":" ", "WORD_FONT":"", "TITLE_FONT":""}
+
+dict={"win": " ","images":[] ,"hangman_status": 0,"letters": [], "guessed": [], "word": "", "game_over": False, "words":["STEWIE", "PETER", "BRIAN"]}
+
+def intializie_game():
+    global dict
+    fonts["TITLE_FONT"] =  pygame.font.SysFont("tahoma",50)
+    fonts["WORD_FONT"] =  pygame.font.SysFont("verdana",40)
+    fonts["LETTER_FONT"] = pygame.font.SysFont("verdana",20)
+    A = 65
+    GAP = 15
+    start_x, start_y = 25,100
+
+    for i in range(26):
+        x = start_x + ((BUTTONE_WIDTH+GAP)*(i %6))
+        y = start_y + ((i//6)*(BUTTONE_WIDTH+GAP))
+
+        dict["letters"].append([x,y, chr(A+i),True])
+    
+    for i in range(7):
+        image = pygame.image.load("img/img"+str(i)+".jpg")
+        dict ["images"].append(image)
+    reset_game_parameters()
+def reset_game_parameters():
+    global dict
+
+    
+    dict["hangman_status"] = 0
+    dict['guessed']=[]
+    dict['game_over'] = False
+    dict["word"] = random.choice(dict["words"])
+
+    for i in range(len(dict["letters"])):
+        dict["letters"][i][3]= True
+
+def draw_window():
+    win = dict["win"]
+    hangman_status = dict["hangman_status"]
+    images = dict["images"]
+    image = pygame.image.load("img/img.jpg")
+    win.blit(images[hangman_status],(0,0))
+
+ 
+
+    text = fonts["TITLE_FONT"].render("HANGMAN",1,WHITE)
+    win.blit( text, (  (WIDTH-text.get_width()) /2, 15 ))
+
+    display_word = ""
+    for letter in dict["word"]:
+        if letter in dict["guessed"]:
+            display_word += letter + " "
+        else: 
+            display_word +="_ "
+    text = fonts["WORD_FONT"].render(display_word,1,WHITE)
+    win.blit(text, ((WIDTH-text.get_width())/2, 425))
+
+
+    for letter in dict["letters"]:
+        x,y,alpha,visbile = letter
+
+        if visbile:
+            temp = pygame.Rect(x,y,BUTTONE_WIDTH,BUTTONE_WIDTH)
+            pygame.draw.rect(win,GREEN, temp, 0,10)
+            text = fonts["LETTER_FONT"].render(alpha,1,BLACK)
+            win.blit(
+                text,
+                (   x + (BUTTONE_WIDTH-text.get_width())/2 + 1,
+                    y+ (BUTTONE_WIDTH-text.get_height())/2 +2
+                )
+            )
+    pygame.display.update()
+
+def  process_letter(mouse_x,mouse_y):
+    for i in (dict["letters"]):
+        x,y,alpha,visble = i
+        if visble:
+            if(mouse_x>x and mouse_x < x + BUTTONE_WIDTH) and (mouse_y>y and mouse_y < y + BUTTONE_WIDTH):
+                i[3] = False
+                dict["guessed"].append(alpha)
+                if alpha not in dict["word"]:
+                    dict["hangman_status"] +=1     
+
+def end_game(mess):
+    global dict
+    win = dict["win"]
+    pygame.time.delay(500)
+    win.fill(WHITE)
+    text = fonts["TITLE_FONT"].render(mess,1,BLACK)
+    win.blit(text,(((WIDTH-text.get_width()) /2),     ((HEIGHT-text.get_height()) /2)   
+    ))
+    text = fonts["LETTER_FONT"].render("press space to play again",1,BLACK)
+    win.blit(text,(((WIDTH-text.get_width()) /2),     ((HEIGHT-text.get_height() +100) /2)   
+    ))
+    dict["game_over"] = True
+    pygame.display.update()
+def quit_game():
+    pygame.quit()
+    sys.exit()
+
+def main():
+    global dict
+
+    FPS = 60
+    pygame.init()
+    clock = pygame.time.Clock()
+    dict["win"] = pygame.display.set_mode((WIDTH,HEIGHT))
+
+
+    intializie_game()
+    while True:
+        clock.tick(FPS)
+
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+               quit_game()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y  = pygame.mouse.get_pos()   
+                process_letter(mouse_x,mouse_y)
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_SPACE and dict["game_over"]:
+                    reset_game_parameters()
+                if event.key == pygame.K_ESCAPE:
+                    quit_game()
+
+
+        if not dict["game_over"]:
+            draw_window()
+        won = True
+        for letter in dict["word"]:
+            if letter not in dict["guessed"]:
+                won = False
+                break
+
+        if won:
+            end_game("you win")
+        elif dict["hangman_status"] ==6:
+            end_game("lost")
+if __name__ == "__main__":
+    main()
